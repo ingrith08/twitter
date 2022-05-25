@@ -18,3 +18,5 @@ code_quality_service
 # MacoOS finder files
 .DS_Store
 /out
+
+.env
