@@ -1,0 +1,20 @@
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of the go coverage tool
+*.out
+
+# Common IDE folders
+.idea
+.vscode
+coverage/
+code_quality_service
+
+# MacoOS finder files
+.DS_Store
+/out
