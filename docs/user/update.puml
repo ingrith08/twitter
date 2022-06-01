@@ -1,0 +1,58 @@
+@startuml
+!include ../styles.puml
+    participant user
+    participant middleware
+    participant handler
+    participant service
+    participant usecase
+    participant repository
+    participant database
+
+    user -> middleware:PUT users/:id
+    activate middleware #Teal
+    middleware -> service: ValidateJWT(ctx: context.Context, token string)
+    activate service #Teal
+    service -> repository: CheckUser(ctx: context.Context, email: string)
+    activate repository #Teal
+    repository -> database: CheckUser(ctx: context.Context, email: string)
+    activate database #Teal
+    repository <-- database: (user: entity.User, found: bool)
+    deactivate database
+    service <-- repository: (user: entity.User, found: bool)
+    deactivate repository
+    middleware <-- service: err: error
+    deactivate service
+    break err != nil 
+       user <- middleware: ginCtx.AbortWithStatusJSON(\nhttp.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    middleware -> handler: PUT users/:id
+    deactivate middleware
+    activate handler #Teal
+       handler -> handler: ID := ginCtx.Param("id")
+    break len(ID) < 1
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Debe enviar el parametro ID"})
+    end
+     handler -> handler: err := ginCtx.ShouldBind(&user)
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": err.Error()})
+    end
+    handler -> usecase: UpdateRegister(ctx: context.Context, \nID string, user: entity.User)
+    activate usecase #Teal
+    usecase -> repository: UpdateUser(ctx: context.Context, \nID string, user: entity.User)
+    activate repository #Teal
+    repository -> database: UpdateUser(ctx: context.Context, \nID string, register: map[string]interface{})
+    activate database #Teal
+    repository <-- database: err: error
+    deactivate database
+    usecase <-- repository: err: error
+    deactivate repository
+    handler <-- usecase: err: error
+    deactivate usecase
+    break err != nil 
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    user <-- handler: ginCtx.JSON(http.StatusOK, ID)
+    deactivate handler
+    
+
+@enduml

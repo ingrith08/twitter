@@ -1,0 +1,69 @@
+@startuml
+!include ../styles.puml
+    participant user
+    participant middleware
+    participant handler
+    participant service
+    participant usecase
+    participant repository
+    participant database
+    participant os
+
+    user -> middleware:POST avatar/
+    activate middleware #Teal
+    middleware -> service: ValidateJWT(ctx: context.Context, token string)
+    activate service #Teal
+    service -> repository: CheckUser(ctx: context.Context, email: string)
+    activate repository #Teal
+    repository -> database: CheckUser(ctx: context.Context, email: string)
+    activate database #Teal
+    repository <-- database: (user: entity.User, found: bool)
+    deactivate database
+    service <-- repository: (user: entity.User, found: bool)
+    deactivate repository
+    middleware <-- service: err: error
+    deactivate service
+    break err != nil 
+       user <- middleware: ginCtx.AbortWithStatusJSON(\nhttp.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    middleware -> handler: GET avatar/
+    deactivate middleware
+    activate handler #Teal
+    handler -> handler: handler, err := ginCtx.FormFile("avatar")
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    handler -> usecase: UploadAvatar(ctx: context.Context, \navatar: []byte)
+    activate usecase #Teal
+    usecase -> repository: UploadAvatar(ctx: context.Context, \nresource: string, avatar: []byte)
+    activate repository #Teal
+    repository -> os:  UploadAvatar(resource: string, avatar: []byte)
+    activate os #Teal
+    repository <-- os: err: error
+    deactivate os
+    usecase <-- repository: err: error
+    deactivate repository
+    break err != nil
+        handler <- usecase: err : error
+    end
+    break err != nil 
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    usecase -> repository: UpdateUser(ctx: context.Context, \nID string, user: entity.User)
+    activate repository #Teal
+    repository -> database: UpdateUser(ctx: context.Context, \nID string, register: map[string]interface{})
+    activate database #Teal
+    repository <-- database: err: error
+    deactivate database
+    usecase <-- repository: err: error
+    deactivate repository
+    break err != nil
+        handler <- usecase: err : error
+    end
+    deactivate usecase
+    break err != nil 
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    user <-- handler: ginCtx.JSON(http.StatusCreated, "Succses")
+    deactivate handler
+@enduml

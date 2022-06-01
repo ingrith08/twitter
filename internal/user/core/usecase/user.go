@@ -13,7 +13,7 @@ type userRespository interface {
 	CheckUser(email string) (entity.User, bool)
 	GetUser(ID string) (entity.User, error)
 	UpdateUser(ID string, u entity.User) (bool, error)
-	ListUser(ID string, page int64, search string, typeUser string) ([]*entity.User, error)
+	ListUser(page int64, search string) ([]*entity.User, error)
 }
 
 type relationRepository interface {
@@ -84,7 +84,7 @@ func (us *useCaseUser) UploadBanner(userID string, extension string) (bool, erro
 }
 
 func (us *useCaseUser) ListUser(ID string, page int64, search string, typeUser string) ([]*entity.User, error) {
-	users, err := us.userReository.ListUser(ID, page, search, typeUser)
+	users, err := us.userReository.ListUser(page, search)
 	if err != nil {
 		return users, err
 	}

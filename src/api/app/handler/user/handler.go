@@ -20,7 +20,7 @@ type useCaseUser interface {
 }
 
 type jwtService interface {
-	GenderJWT(user entity.User) (string, error)
+	CreateJWT(user entity.User) (string, error)
 	GetUserID() string
 }
 
@@ -37,6 +37,7 @@ func NewInsetUserHandler(usecase useCaseUser, jwrjwtService jwtService) *handler
 }
 
 func (h *handler) Register(ginCtx *gin.Context) {
+	// Convertir al contexto de Meli
 	var user entity.User
 
 	if err := ginCtx.ShouldBind(&user); err != nil {
@@ -82,17 +83,17 @@ func (h *handler) Login(ginCtx *gin.Context) {
 		return
 	}
 
-	jwtKey, err := h.jwtService.GenderJWT(document)
+	jwtKey, err := h.jwtService.CreateJWT(document)
 	if err != nil {
 		ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	resp := entity.Login{
+	token := entity.Login{
 		Token: jwtKey,
 	}
 
-	ginCtx.JSON(http.StatusOK, resp)
+	ginCtx.JSON(http.StatusOK, token)
 	ginCtx.SetCookie("token", jwtKey, 60*60*24, "/", "localhost", true, true)
 }
 
@@ -139,6 +140,7 @@ func (h *handler) UpdateRegister(ginCtx *gin.Context) {
 
 func (h *handler) UploadAvatar(ginCtx *gin.Context) {
 	handler, err := ginCtx.FormFile("avatar")
+
 	if err != nil {
 		ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -203,7 +205,7 @@ func (h *handler) ListUser(ginCtx *gin.Context) {
 	}
 	pagTemp, err := strconv.Atoi(page)
 	if err != nil {
-		ginCtx.JSON(http.StatusBadRequest, gin.H{"error": "DDebe enviar el parámetro página como entero mayor a 0"})
+		ginCtx.JSON(http.StatusBadRequest, gin.H{"error": "Debe enviar el parámetro página como entero mayor a 0"})
 		return
 	}
 	pag := int64(pagTemp)
@@ -213,5 +215,5 @@ func (h *handler) ListUser(ginCtx *gin.Context) {
 		return
 	}
 
-	ginCtx.JSON(http.StatusCreated, users)
+	ginCtx.JSON(http.StatusOK, users)
 }

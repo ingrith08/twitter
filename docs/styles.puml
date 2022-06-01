@@ -1,0 +1,30 @@
+@startuml
+
+skinparam sequence {
+	ArrowColor Teal
+	ActorBorderColor Teal
+	LifeLineBorderColor Teal
+	LifeLineBackgroundColor #A9DCDF
+	ParticipantBorderColor Teal
+	ParticipantBackgroundColor Teal
+	ParticipantFontSize 14
+	ParticipantFontColor White
+}
+
+skinparam {
+QueueBackgroundColor Teal
+QueueBorderColor Teal
+QueueFontColor White
+QueueFontSize 14
+}
+
+skinparam state {
+  StartColor Black
+  EndColor Black
+  BackgroundColor Teal
+  BackgroundColor<<Warning>> Olive
+  BorderColor White
+  FontColor White
+}
+
+@enduml

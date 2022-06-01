@@ -77,7 +77,7 @@ func (r *MongoRepository) UpdateUser(ID string, register map[string]interface{})
 	return true, nil
 }
 
-func (r *MongoRepository) ListUser(ID string, page int64, search string, tipo string) ([]*entity.User, error) {
+func (r *MongoRepository) ListUser(page int64, search string) ([]*entity.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

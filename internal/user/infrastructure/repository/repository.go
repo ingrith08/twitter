@@ -7,7 +7,7 @@ type repository interface {
 	CheckUser(email string) (entity.User, bool)
 	GetUser(ID string) (entity.User, error)
 	UpdateUser(ID string, u map[string]interface{}) (bool, error)
-	ListUser(ID string, page int64, search string, typeUser string) ([]*entity.User, error)
+	ListUser(page int64, search string) ([]*entity.User, error)
 }
 
 type userRepository struct {
@@ -59,6 +59,6 @@ func (ur userRepository) UpdateUser(ID string, u entity.User) (bool, error) {
 	return ur.repository.UpdateUser(ID, register)
 }
 
-func (ur userRepository) ListUser(ID string, page int64, search string, typeUser string) ([]*entity.User, error) {
-	return ur.repository.ListUser(ID, page, search, typeUser)
+func (ur userRepository) ListUser(page int64, search string) ([]*entity.User, error) {
+	return ur.repository.ListUser(page, search)
 }

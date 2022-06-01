@@ -1,0 +1,58 @@
+@startuml
+!include ../styles.puml
+    participant user
+    participant handler
+    participant usecase
+    participant repository
+    participant service
+    participant database
+
+    user -> handler: POST users/login/
+    activate handler #Teal
+    handler -> handler: err := ginCtx.ShouldBind(&user)
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": err.Error()})
+    end
+    break len(user.Email) == 0
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "El email de usuario es requerido"})
+    end
+    handler -> usecase: Login(ctx: context.Context, \nemail: string, password:string)
+    activate usecase #Teal
+    usecase -> repository: CheckUser(ctx: context.Context, email: string)
+    activate repository #Teal
+    repository -> database: CheckUser(ctx: context.Context, email: string)
+    activate database #Teal
+    repository <-- database: (user: entity.User, err: error)
+    deactivate database
+    usecase <-- repository: (user: entity.User, err: error)
+    deactivate repository
+    break err != nil
+        handler <- usecase: (user: nil, err : error)
+    end
+    break err != nil
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Usuario y/o contrasena invalidos"})
+    end
+    usecase -> usecase: err := bcrypt.CompareHashAndPassword\n(passwordDB: []byte, passwordBytes: []byte)
+    break err != nil
+        handler <- usecase: (user: entity.User, err : error)
+    end
+    break err != nil
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Usuario y/o contrasena invalidos"})
+    end
+    usecase -> service: CreateJWT(ctx: context.Context, user: entity.User)
+    activate service #Teal
+    usecase <-- service: (jwtKey: string, err: error)
+    deactivate service
+    break err != nil 
+       handler <- usecase: (token: nil, err: error)
+    end
+    break err != nil 
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": err.Error()})
+    end
+    handler <-- usecase: (token: entity.Login, err: nil)
+    deactivate usecase
+    user <-- handler: ginCtx.JSON(http.StatusOK, token)
+    user <-- handler: ginCtx.SetCookie(token: string, jwtKey: string, \nmaxAge: int, path: string, domain: string, \nsecure: bool, httpOnly: bool)
+    deactivate handler
+
+@enduml

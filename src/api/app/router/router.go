@@ -10,13 +10,13 @@ func NewRouter(handlers *handlerContainer, router *gin.Engine) *gin.Engine {
 	user.PUT("/:id", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.UpdateRegister)
 	user.GET("/", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.ListUser)
 
+	router.POST("/avatar", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.UploadAvatar)
+	router.POST("/banner", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.UploadBanner)
+
 	tweet := router.Group("/tweets")
 	tweet.POST("/", handlers.jwtMiddleware.ValidateJWT, handlers.tweetHandler.SaveTweet)
 	tweet.GET("/", handlers.jwtMiddleware.ValidateJWT, handlers.tweetHandler.GetTweet)
 	tweet.DELETE("/:id", handlers.jwtMiddleware.ValidateJWT, handlers.tweetHandler.DeleteTweet)
-
-	router.POST("/avatar", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.UploadAvatar)
-	router.POST("/banner", handlers.jwtMiddleware.ValidateJWT, handlers.userHandler.UploadBanner)
 
 	relation := router.Group("/relations")
 	relation.POST("/", handlers.jwtMiddleware.ValidateJWT, handlers.relationHandler.CreateRelation)

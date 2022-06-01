@@ -21,7 +21,7 @@ func NewJwtService(userReository userRespository) *jwtService {
 	}
 }
 
-func (service *jwtService) GenderJWT(user entity.User) (string, error) {
+func (service *jwtService) CreateJWT(user entity.User) (string, error) {
 	myPassword := []byte("secret")
 
 	payload := jwt.MapClaims{

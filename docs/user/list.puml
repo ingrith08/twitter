@@ -1,0 +1,74 @@
+@startuml
+!include ../styles.puml
+    participant user
+    participant middleware
+    participant handler
+    participant service
+    participant usecase
+    participant userRepository
+    participant relationRepository
+    participant database
+
+    user -> middleware:GET users/
+    activate middleware #Teal
+    middleware -> service: ValidateJWT(ctx: context.Context, token string)
+    activate service #Teal
+    service -> userRepository: CheckUser(ctx: context.Context, email: string)
+    activate userRepository #Teal
+    userRepository -> database: CheckUser(ctx: context.Context, email: string)
+    activate database #Teal
+    userRepository <-- database: (user: entity.User, found: bool)
+    deactivate database
+    service <-- userRepository: (user: entity.User, found: bool)
+    deactivate userRepository
+    middleware <-- service: err: error
+    deactivate service
+    break err != nil 
+       user <- middleware: ginCtx.AbortWithStatusJSON(\nhttp.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    middleware -> handler: GET users/
+    deactivate middleware
+    activate handler #Teal
+    handler -> handler: page := ginCtx.Query("page")
+    break len(page) < 1
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Debe enviar el parámetro página"})
+    end
+    handler -> handler: typeUser := ginCtx.Query("type")
+    break len(typeUser) < 1
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Debe enviar el parámetro tipo"})
+    end
+    handler -> handler: pagTemp, err := strconv.Atoi(page)
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Debe enviar el parámetro página como entero mayor a 0"})
+    end
+    handler -> usecase: ListUser(ctx: context.Context, ID: string, \npage: int64, search: string, typeUser: string)
+    activate usecase #Teal
+    usecase -> userRepository: ListUser(tx: context.Context, \npage: int64, search: string)
+    activate userRepository #Teal
+    userRepository -> database: ListUser(tx: context.Context, \npage: int64, search: string)
+    activate database #Teal
+    userRepository <-- database: (users: []*entity.User, err: error)
+    deactivate database
+    usecase <-- userRepository: (users: []*entity.User, err: error)
+    deactivate userRepository
+    break err != nil 
+       handler <- usecase: (users: nil, err: error)
+    end
+    break err != nil 
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    end
+    usecase -> relationRepository: GetRelation(ctx: context.Context, relation: entityRelation.Relation)
+    activate relationRepository #Teal
+    relationRepository -> database: GetRelation(ctx: context.Context, relation: entityRelation.Relation)
+    activate database #Teal
+    relationRepository <-- database: (found: bool, err: error)
+    deactivate database
+    usecase <-- relationRepository: (found: bool, err: error)
+    deactivate relationRepository
+    handler <-- usecase: (users: []*entity.User, err: nil)
+    deactivate usecase 
+    user <-- handler: ginCtx.JSON(http.StatusOK, users)
+    deactivate handler
+    
+
+@enduml

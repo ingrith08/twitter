@@ -1,0 +1,54 @@
+@startuml
+!include ../styles.puml
+    participant user
+    participant handler
+    participant usecase
+    participant repository
+    participant database
+
+    user -> handler: POST users/
+    activate handler #Teal
+    handler -> handler: err := ginCtx.ShouldBind(&user)
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": err.Error()})
+    end
+    break len(user.Email) == 0
+       user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "El email de usuario es requerido"})
+    end
+    break len(user.Password) < 6
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": "Debe especificar una contrasena de 6 caracteres"})
+
+    end
+    handler -> usecase: Register(ctx: context.Context, user: entity.User)
+    activate usecase #Teal
+    usecase -> usecase: encriptarPassword(password: string)
+    usecase -> repository: CheckUser(ctx: context.Context, email: string)
+    activate repository #Teal
+    repository -> database: CheckUser(ctx: context.Context, email: string)
+    activate database #Teal
+    repository <-- database: (user: entity.User, found: bool)
+    deactivate database
+    usecase <-- repository: (user: entity.User, found: bool)
+    deactivate repository
+    alt found == true
+       handler <- usecase: (user: "", err: error)
+    end
+    break err != nil
+        user <- handler: ginCtx.JSON(http.StatusBadRequest, \ngin.H{"error": err.Error()})
+    end
+    usecase -> repository: InsertUser(ctx: context.Context, user: entity.User)
+    activate repository #Teal
+    repository -> database: InsertUser(ctx: context.Context, user: entity.User)
+    activate database #Teal
+    repository <-- database: (id: string, err: error)
+    deactivate database
+    usecase <-- repository: (id: string, err: error)
+    deactivate repository
+    handler <-- usecase: (id: string, err: error)
+    deactivate usecase
+    break err != nil 
+      user  <- handler: ginCtx.JSON(http.StatusBadRequest, \nngin.H{"error": err.Error()})
+    end
+    user <-- handler: ginCtx.JSON(http.StatusOK, id)
+    deactivate handler
+@enduml

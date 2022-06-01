@@ -11,13 +11,13 @@ import (
 var Email string
 var IDUsuario string
 
-func (service *jwtService) ValidateJWT(token string) (*entity.Claim, bool, string, error) {
+func (service *jwtService) ValidateJWT(token string) error {
 	miClave := []byte("secret")
 	claims := &entity.Claim{}
 
 	splitToken := strings.Split(token, "Bearer")
 	if len(splitToken) != 2 {
-		return claims, false, string(""), errors.New("formato de token invalido")
+		return errors.New("formato de token invalido")
 	}
 
 	token = strings.TrimSpace(splitToken[1])
@@ -25,18 +25,21 @@ func (service *jwtService) ValidateJWT(token string) (*entity.Claim, bool, strin
 	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return miClave, nil
 	})
-	if err == nil {
-		_, found := service.userReository.CheckUser(claims.Email)
-		if found {
-			Email = claims.Email
-			IDUsuario = claims.ID.Hex()
-		}
-		return claims, found, IDUsuario, nil
+	if err != nil {
+		return err
 	}
+
+	_, found := service.userReository.CheckUser(claims.Email)
+	if found {
+		Email = claims.Email
+		IDUsuario = claims.ID.Hex()
+	}
+
 	if !tkn.Valid {
-		return claims, false, string(""), errors.New("token inválido")
+		return errors.New("token inválido")
 	}
-	return claims, false, string(""), err
+
+	return nil
 }
 
 func (service *jwtService) GetUserID() string {
